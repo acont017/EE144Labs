@@ -54,24 +54,30 @@ class Turtlebot():
     def move_to_point(self, point):
         # please complete this function
         # hint: you can have access to x, y by point[0], point[1]
-            Mx = np.array([[0, 0 , 0, 1], [self.T**3, self.T**2, self.T, 1], [0, 0, 1, 0], [3*self.T**2, 2*self.T, 1, 0]])
-            My = np.array([[0, 0 , 0, 1], [self.T**3, self.T**2, self.T, 1], [0, 0, 1, 0], [3*self.T**2, 2*self.T, 1, 0]])
-            x = np.array([self.pose.x, point[0], self.vel.linear.x, 0.25])
-            y = np.array([self.pose.y, point[0], self.vel.linear.y, 0.25])
+            Mx = np.array([[0,0,0,0,0,1], [self.T**5,self.T**4,self.T**3,self.T**2,self.T,1],\
+             [0,0,0,0,1,0], [5*self.T**4,4*self.T**3,3*self.T**2,2*self.T, 1, 0],[0,0,0,2,0,0],\
+             [20*self.T**3,12*self.T**2,6*self.T,2,0,0]])
+            My = np.array([[0,0,0,0,0,1], [self.T**5,self.T**4,self.T**3,self.T**2,self.T,1],\
+             [0,0,0,0,1,0], [5*self.T**4,4*self.T**3,3*self.T**2,2*self.T, 1, 0],[0,0,0,2,0,0],\
+             [20*self.T**3,12*self.T**2,6*self.T,2,0,0]])
+            x = np.array([self.pose.x, point[0], self.vel.linear.x, 0.25, 0, 0])
+            y = np.array([self.pose.y, point[1], self.vel.linear.y, 0.25, 0, 0])
             ax = np.linalg.solve(Mx,x)
             ay = np.linalg.solve(My,y)
-            poly_x = np.poly1d([ax[0],ax[1],ax[2],ax[3]])
-            poly_y = np.poly1d([ay[0],ax[1],ax[2],ax[3]])
-            print 'x =', poly_x, 'y = ', poly_y
+            poly_x = np.poly1d([ax[0],ax[1],ax[2],ax[3],ax[4],ax[5]])
+            poly_y = np.poly1d([ay[0],ay[1],ay[2],ay[3],ay[4],ay[5]])
+            print 'x =', poly_x
+            print 'y = ', poly_y
+            kd = 0.3
             theta = 0
             for t in np.arange(0,self.T,0.1):
                 polyder_x = np.polyder(poly_x, 1)
                 polyder_y = np.polyder(poly_y, 1)
                 self.vel.linear.x = sqrt(polyder_x(t)**2 + polyder_y(t)**2)
                 print 't =', t, 'velocity', self.vel.linear.x
-                old_theta = theta
-                theta = atan2(poly_y(t), poly_x(t))
-                self.vel.angular.z = (old_theta - theta)/0.1
+                old_theta = self.pose.theta
+                theta = atan2(polyder_y(t), polyder_x(t))
+                self.vel.angular.z = kd * (theta - old_theta)/0.1
                 self.vel_pub.publish(self.vel)
                 self.rate.sleep()
 
@@ -80,8 +86,8 @@ class Turtlebot():
         # plot trajectory
         data = np.array(self.trajectory)
         #np.savetxt('trajectory.csv', data, fmt='%f', delimiter=',')
-        #plt.plot(data[:,0],data[:,1])
-        #plt.show()
+        plt.plot(data[:,0],data[:,1])
+        plt.show()
 
 
     def stop(self):
