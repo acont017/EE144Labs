@@ -45,13 +45,16 @@ class Turtlebot():
         WAYPOINTS = [[0.5, 0], [0.5, -0.5], [1, -0.5], [1, 0], [1, 0.5],\
                      [1.5, 0.5], [1.5, 0], [1.5, -0.5], [1, -0.5], [1, 0],\
                      [1, 0.5], [0.5, 0.5], [0.5, 0], [0, 0]]
-        for point in WAYPOINTS:
-            self.move_to_point(point)
+        for i in range(14):
+            if i < 13:
+                self.move_to_point(WAYPOINTS[i], WAYPOINTS[i+1])
+            else:
+                self.move_to_point(WAYPOINTS[i], [0,0])
         self.stop()
         rospy.loginfo("Action done.")
 
 
-    def move_to_point(self, point):
+    def move_to_point(self, point, next_point):
         # please complete this function
         # hint: you can have access to x, y by point[0], point[1]
             Mx = np.array([[0,0,0,0,0,1], [self.T**5,self.T**4,self.T**3,self.T**2,self.T,1],\
@@ -60,8 +63,12 @@ class Turtlebot():
             My = np.array([[0,0,0,0,0,1], [self.T**5,self.T**4,self.T**3,self.T**2,self.T,1],\
              [0,0,0,0,1,0], [5*self.T**4,4*self.T**3,3*self.T**2,2*self.T, 1, 0],[0,0,0,2,0,0],\
              [20*self.T**3,12*self.T**2,6*self.T,2,0,0]])
-            x = np.array([self.pose.x, point[0], self.vel.linear.x, .06, 0, 0])
-            y = np.array([self.pose.y, point[1], 0, 0, 0, 0])
+            c_2_p = [point[0] - self.pose.x, point[1] - self.pose.y]
+            p_2_np = [next_point[0] - point[0], next_point[1] - point[1]]
+            angle = atan2(c_2_p[1], c_2_p[0])
+            angle_next = atan2(p_2_np[1], p_2_np[0])
+            x = np.array([self.pose.x, point[0], self.vel.linear.x*cos(angle), .1*cos(angle_next), 0, 0])
+            y = np.array([self.pose.y, point[1], self.vel.linear.x*sin(angle), .1*sin(angle_next), 0, 0])
             ax = np.linalg.solve(Mx,x)
             ay = np.linalg.solve(My,y)
             poly_x = np.poly1d([ax[0],ax[1],ax[2],ax[3],ax[4],ax[5]])
