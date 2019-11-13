@@ -30,7 +30,7 @@ class Turtlebot():
 
         self.logging_counter = 0
 
-        self.T = 5  #Time to travel point to point.
+        self.T = 4  #Time to travel point to point.
 
         try:
             self.run()
@@ -49,7 +49,7 @@ class Turtlebot():
             if i < 13:
                 self.move_to_point(WAYPOINTS[i], WAYPOINTS[i+1])
             else:
-                self.move_to_point(WAYPOINTS[i], [0,0])
+                self.move_to_point(WAYPOINTS[i], WAYPOINTS[i])
         self.stop()
         rospy.loginfo("Action done.")
 
@@ -67,8 +67,8 @@ class Turtlebot():
             p_2_np = [next_point[0] - point[0], next_point[1] - point[1]]
             angle = atan2(c_2_p[1], c_2_p[0])
             angle_next = atan2(p_2_np[1], p_2_np[0])
-            x = np.array([self.pose.x, point[0], self.vel.linear.x*cos(angle), .1*cos(angle_next), 0, 0])
-            y = np.array([self.pose.y, point[1], self.vel.linear.x*sin(angle), .1*sin(angle_next), 0, 0])
+            x = np.array([self.pose.x, point[0], self.vel.linear.x*cos(angle), .2*cos(angle_next), 0, 0])
+            y = np.array([self.pose.y, point[1], self.vel.linear.x*sin(angle), .2*sin(angle_next), 0, 0])
             ax = np.linalg.solve(Mx,x)
             ay = np.linalg.solve(My,y)
             poly_x = np.poly1d([ax[0],ax[1],ax[2],ax[3],ax[4],ax[5]])
