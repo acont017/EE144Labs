@@ -30,7 +30,7 @@ class Turtlebot():
 
         self.logging_counter = 0
 
-        self.T = 3  #Time to travel point to point.
+        self.T = 5  #Time to travel point to point.
 
         try:
             self.run()
@@ -60,24 +60,30 @@ class Turtlebot():
             My = np.array([[0,0,0,0,0,1], [self.T**5,self.T**4,self.T**3,self.T**2,self.T,1],\
              [0,0,0,0,1,0], [5*self.T**4,4*self.T**3,3*self.T**2,2*self.T, 1, 0],[0,0,0,2,0,0],\
              [20*self.T**3,12*self.T**2,6*self.T,2,0,0]])
-            x = np.array([self.pose.x, point[0], self.vel.linear.x, 0.25, 0, 0])
-            y = np.array([self.pose.y, point[1], self.vel.linear.y, 0.25, 0, 0])
+            x = np.array([self.pose.x, point[0], self.vel.linear.x, .06, 0, 0])
+            y = np.array([self.pose.y, point[1], 0, 0, 0, 0])
             ax = np.linalg.solve(Mx,x)
             ay = np.linalg.solve(My,y)
             poly_x = np.poly1d([ax[0],ax[1],ax[2],ax[3],ax[4],ax[5]])
             poly_y = np.poly1d([ay[0],ay[1],ay[2],ay[3],ay[4],ay[5]])
             print 'x =', poly_x
             print 'y = ', poly_y
-            kd = 0.3
-            theta = 0
+            kp = 3
+            kd = 0.4
+            t_error = 0
             for t in np.arange(0,self.T,0.1):
                 polyder_x = np.polyder(poly_x, 1)
                 polyder_y = np.polyder(poly_y, 1)
-                self.vel.linear.x = sqrt(polyder_x(t)**2 + polyder_y(t)**2)
+                self.vel.linear.x = 1.2*sqrt(polyder_x(t)**2 + polyder_y(t)**2)
                 print 't =', t, 'velocity', self.vel.linear.x
-                old_theta = self.pose.theta
                 theta = atan2(polyder_y(t), polyder_x(t))
-                self.vel.angular.z = kd * (theta - old_theta)/0.1
+                t_error_old = t_error
+                t_error = (theta - self.pose.theta)
+                if t_error > pi:
+                    t_error = t_error - 2*pi
+                elif t_error < -pi:
+                    t_error = t_error + 2*pi
+                self.vel.angular.z = kp * (t_error) + kd * (t_error - t_error_old)
                 self.vel_pub.publish(self.vel)
                 self.rate.sleep()
 
@@ -110,7 +116,7 @@ class Turtlebot():
 
         # Logging once every 100 times
         self.logging_counter += 1
-        if self.logging_counter == 100:
+        if self.logging_counter == 10:
             self.logging_counter = 0
             self.trajectory.append([self.pose.x, self.pose.y])  # save trajectory
             rospy.loginfo("odom: x=" + str(self.pose.x) +\
