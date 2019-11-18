@@ -30,7 +30,7 @@ class Turtlebot():
 
         self.logging_counter = 0
 
-        self.T = 4  #Time to travel point to point.
+        self.T = 2.1  #Time to travel point to point.
 
         try:
             self.run()
@@ -49,7 +49,7 @@ class Turtlebot():
             if i < 13:
                 self.move_to_point(WAYPOINTS[i], WAYPOINTS[i+1])
             else:
-                self.move_to_point(WAYPOINTS[i], WAYPOINTS[i])
+                self.move_to_point(WAYPOINTS[i], [-1*self.pose.x,0])
         self.stop()
         rospy.loginfo("Action done.")
 
@@ -57,10 +57,7 @@ class Turtlebot():
     def move_to_point(self, point, next_point):
         # please complete this function
         # hint: you can have access to x, y by point[0], point[1]
-            Mx = np.array([[0,0,0,0,0,1], [self.T**5,self.T**4,self.T**3,self.T**2,self.T,1],\
-             [0,0,0,0,1,0], [5*self.T**4,4*self.T**3,3*self.T**2,2*self.T, 1, 0],[0,0,0,2,0,0],\
-             [20*self.T**3,12*self.T**2,6*self.T,2,0,0]])
-            My = np.array([[0,0,0,0,0,1], [self.T**5,self.T**4,self.T**3,self.T**2,self.T,1],\
+            M = np.array([[0,0,0,0,0,1], [self.T**5,self.T**4,self.T**3,self.T**2,self.T,1],\
              [0,0,0,0,1,0], [5*self.T**4,4*self.T**3,3*self.T**2,2*self.T, 1, 0],[0,0,0,2,0,0],\
              [20*self.T**3,12*self.T**2,6*self.T,2,0,0]])
             c_2_p = [point[0] - self.pose.x, point[1] - self.pose.y]
@@ -69,8 +66,8 @@ class Turtlebot():
             angle_next = atan2(p_2_np[1], p_2_np[0])
             x = np.array([self.pose.x, point[0], self.vel.linear.x*cos(angle), .2*cos(angle_next), 0, 0])
             y = np.array([self.pose.y, point[1], self.vel.linear.x*sin(angle), .2*sin(angle_next), 0, 0])
-            ax = np.linalg.solve(Mx,x)
-            ay = np.linalg.solve(My,y)
+            ax = np.linalg.solve(M,x)
+            ay = np.linalg.solve(M,y)
             poly_x = np.poly1d([ax[0],ax[1],ax[2],ax[3],ax[4],ax[5]])
             poly_y = np.poly1d([ay[0],ay[1],ay[2],ay[3],ay[4],ay[5]])
             print 'x =', poly_x
@@ -81,7 +78,7 @@ class Turtlebot():
             for t in np.arange(0,self.T,0.1):
                 polyder_x = np.polyder(poly_x, 1)
                 polyder_y = np.polyder(poly_y, 1)
-                self.vel.linear.x = 1.2*sqrt(polyder_x(t)**2 + polyder_y(t)**2)
+                self.vel.linear.x = 1.1*sqrt(polyder_x(t)**2 + polyder_y(t)**2)
                 print 't =', t, 'velocity', self.vel.linear.x
                 theta = atan2(polyder_y(t), polyder_x(t))
                 t_error_old = t_error
