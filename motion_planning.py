@@ -44,20 +44,18 @@ class Turtlebot():
 
 
     def run(self):
-        # follow the sequence of waypoints
-        WAYPOINTS = [[0.5, 0], [0.5, -0.5], [1, -0.5], [1, 0], [1, 0.5],\
-                     [1.5, 0.5], [1.5, 0], [1.5, -0.5], [1, -0.5], [1, 0],\
-                     [1, 0.5], [0.5, 0.5], [0.5, 0], [0, 0]]
-        for i in range(14):
+        # get waypoints from A star algorithm
+        waypoints = self.get_path_from_A_star()
+        for i in range(len(waypoints)):
             # Until final point we pass current desired point and next desired point.
-            if i < 13:
-                self.move_to_point(WAYPOINTS[i], WAYPOINTS[i+1])
+            if i < (len(waypoints) - 1):
+                self.move_to_point(waypoints[i], waypoints[i+1])
             # For final point we pass in the opposite sign of current pos
             # this ensures the robot stops moving facing the direction it is currently
             # traveling.
             else:
                 self.lastpoint = 1
-                self.move_to_point(WAYPOINTS[i], [-1*self.pose.x,0])
+                self.move_to_point(waypoints[i], [-1*self.pose.x,0])
         self.stop()
         rospy.loginfo("Action done.")
 
@@ -124,21 +122,50 @@ class Turtlebot():
 
     def get_path_from_A_star(self):
             start_point = [0, 0]
-            end_point = [5, 1]
-            obstacles = [[2, -1], [2, 0], [2, 1], ...]
-            # you may want to add more boundary grids to obstacles
+            self.end_point = [5, 1]
+            obstacles = [[2, -1], [2, 0], [2, 1], [3,-1],[3,0],[3,1]]
 
             open_list = []
             close_list = []
             optimal_path = []
 
-        return optimal_path
+            d = 4   # d is directions we can travel.
+            gs = 0.5 # Grid sizeself.
+            open_list.append([start_point, self.cost(start_point, 0)])
+            while len(open_list) != 0:
+            curr_node = open_list[0]
+            curr_point = curr_node[0]
+            print curr_point
+            for i in range(d):
+                if i == 0:
+                    next_point = [curr_point[0] + gs, curr_point[1]]
+                    if next_point not in obstacles
+                        open_list.append([next_point, self.cost(curr_node[0], curr_node[1])])
+                if i == 1:
+                    open_list.append([, self.cost(curr_node[0], curr_node[1])])
+                if i == 2:
+                    open_list.append([[curr_point[0], curr_point[1] + gs], self.cost(curr_node[0], curr_node[1])])
+                if i == 3:
+                    open_list.append([[curr_point[0], curr_point[1] - gs], self.cost(curr_node[0], curr_node[1])])
+            print 'Before pop:', open_list
+            open_list.remove(curr_node)
+            print 'After pop:', open_list
+            close_list.append(curr_node)
+            open_list.sort(key=lambda x:x[1])
+            print open_list
+            return optimal_path
+
+    def cost(self, point1, past_cost):
+            heur_cost = abs(self.end_point[0] - point1[0]) + abs(self.end_point[1] - point1[1])
+            est_cost = heur_cost + past_cost + 1
+
+            return est_cost
 
     def visualization(self):
         # plot trajectory
         data = np.array(self.trajectory)
         #np.savetxt('trajectory.csv', data, fmt='%f', delimiter=',')
-        plt.plot(data[:,0],data[:,1])
+        #plt.plot(data[:,0],data[:,1])
         plt.show()
 
 
@@ -162,7 +189,7 @@ class Turtlebot():
 
         # Logging once every 100 times
         self.logging_counter += 1
-        if self.logging_counter == 10:
+        if self.logging_counter == 100:
             self.logging_counter = 0
             self.trajectory.append([self.pose.x, self.pose.y])  # save trajectory
             rospy.loginfo("odom: x=" + str(self.pose.x) +\
