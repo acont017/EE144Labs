@@ -31,6 +31,9 @@ class Turtlebot():
         self.logging_counter = 0
 
         self.T = 2.1  #Time to travel point to point.
+        self.lastpoint = 0 	# Flag for last point.
+
+
 
         try:
             self.run()
@@ -53,6 +56,7 @@ class Turtlebot():
             # this ensures the robot stops moving facing the direction it is currently
             # traveling.
             else:
+                self.lastpoint = 1
                 self.move_to_point(WAYPOINTS[i], [-1*self.pose.x,0])
         self.stop()
         rospy.loginfo("Action done.")
@@ -80,6 +84,9 @@ class Turtlebot():
             # y vector is set in the same fashion as the x vector.
             y = np.array([self.pose.y, point[1], self.vel.linear.x*sin(angle),\
                 .2*sin(angle_next), 0, 0])
+            if self.lastpoint:
+                x = np.array([self.pose.x, point[0], self.vel.linear.x*cos(angle), 0, 0, 0])
+                y = np.array([self.pose.y, point[1], self.vel.linear.x*sin(angle), 0, 0, 0])
             # The coefficients of the 5th order polynomials are solved here.
             ax = np.linalg.solve(M,x)
             ay = np.linalg.solve(M,y)
