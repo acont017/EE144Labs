@@ -55,7 +55,7 @@ class Turtlebot():
             # traveling.
             else:
                 self.lastpoint = 1
-                self.move_to_point(waypoints[i], [-1*self.pose.x,0])
+                self.move_to_point(waypoints[i], [-1*self.pose.x, -1*self.pose.y])
         self.stop()
         rospy.loginfo("Action done.")
 
@@ -123,36 +123,65 @@ class Turtlebot():
     def get_path_from_A_star(self):
             start_point = [0, 0]
             self.end_point = [5, 1]
-            obstacles = [[2, -1], [2, 0], [2, 1], [3,-1],[3,0],[3,1]]
+            obstacles = [[2, -1], [2, -0.5], [2, 0], [2, 0.5], [2, 1], [3,-1],[3, -0.5], [3,0],[3,1]]
 
             open_list = []
             close_list = []
+            close_points = []
             optimal_path = []
+            optimal_nodes = []
+            END_REACHED = 0
 
             d = 4   # d is directions we can travel.
             gs = 0.5 # Grid sizeself.
-            open_list.append([start_point, self.cost(start_point, 0)])
-            while len(open_list) != 0:
-            curr_node = open_list[0]
-            curr_point = curr_node[0]
-            print curr_point
-            for i in range(d):
-                if i == 0:
-                    next_point = [curr_point[0] + gs, curr_point[1]]
-                    if next_point not in obstacles
-                        open_list.append([next_point, self.cost(curr_node[0], curr_node[1])])
-                if i == 1:
-                    open_list.append([, self.cost(curr_node[0], curr_node[1])])
-                if i == 2:
-                    open_list.append([[curr_point[0], curr_point[1] + gs], self.cost(curr_node[0], curr_node[1])])
-                if i == 3:
-                    open_list.append([[curr_point[0], curr_point[1] - gs], self.cost(curr_node[0], curr_node[1])])
-            print 'Before pop:', open_list
-            open_list.remove(curr_node)
-            print 'After pop:', open_list
-            close_list.append(curr_node)
-            open_list.sort(key=lambda x:x[1])
-            print open_list
+
+            # Current node(point), total cost(prev cost, est ctg), parent node.
+            open_list.append([start_point, self.cost(start_point, 0), 0])
+
+            while END_REACHED == 0:
+                curr_node = open_list[0]
+                curr_point = curr_node[0]
+                #print curr_point
+                next_point = []
+                for i in range(d):
+                    if i == 0:
+                        next_point = [curr_point[0] + gs, curr_point[1]]
+                        if (next_point not in obstacles) and (next_point not in close_points):
+                            open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
+                    elif i == 1:
+                        next_point = [curr_point[0] - gs, curr_point[1]]
+                        if (next_point not in obstacles) and (next_point not in close_points):
+                            open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
+                    elif i == 2:
+                        next_point = [curr_point[0], curr_point[1] + gs]
+                        if (next_point not in obstacles) and (next_point not in close_points):
+                            open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
+                    elif i == 3:
+                        next_point = [curr_point[0], curr_point[1] - gs]
+                        if (next_point not in obstacles) and (next_point not in close_points):
+                            open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
+                    if next_point == self.end_point:
+                        print 'FOUND END'
+                        open_list = []
+                        END_REACHED = 1
+                        optimal_nodes.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
+                if END_REACHED == 0:
+                    open_list.remove(curr_node)
+                    open_list.sort(key=lambda x:x[1])
+                    #print 'sorted & popped:', open_list
+                close_list.append(curr_node)
+                close_points.append(curr_point)
+            #print close_list
+            if len(optimal_nodes) != 0:
+                final_node = optimal_nodes[0]
+                optimal_path.append(final_node[0])
+                parent_node = final_node[2]
+                while parent_node != 0:
+                    optimal_path.append(parent_node[0])
+                    parent_node = parent_node[2]
+                optimal_path.reverse()
+                optimal_path.pop(0)
+            print 'Path found: ', optimal_path
             return optimal_path
 
     def cost(self, point1, past_cost):
