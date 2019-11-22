@@ -39,8 +39,8 @@ class Turtlebot():
             self.run()
         except rospy.ROSInterruptException:
             pass
-        finally:
-            self.visualization()
+        #finally:
+            #self.visualization()
 
 
     def run(self):
@@ -58,6 +58,7 @@ class Turtlebot():
                 self.move_to_point(waypoints[i], [-1*self.pose.x, -1*self.pose.y])
         self.stop()
         rospy.loginfo("Action done.")
+        self.visualization()
 
 
     def move_to_point(self, point, next_point):
@@ -123,7 +124,7 @@ class Turtlebot():
     def get_path_from_A_star(self):
             start_point = [0, 0]
             self.end_point = [5, 1]
-            obstacles = [[2, -1], [2, -0.5], [2, 0], [2, 0.5], [2, 1], [3,-1],[3, -0.5], [3,0],[3,1]]
+            self.obstacles = [[2, -1], [2, 0], [2, 1], [3,-1], [3,0], [3,1]]
 
             open_list = []
             close_list = []
@@ -145,20 +146,20 @@ class Turtlebot():
                 next_point = []
                 for i in range(d):
                     if i == 0:
-                        next_point = [curr_point[0] + gs, curr_point[1]]
-                        if (next_point not in obstacles) and (next_point not in close_points):
+                        next_point = [curr_point[0] + 1, curr_point[1]]
+                        if (next_point not in self.obstacles) and (next_point not in close_points):
                             open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
                     elif i == 1:
-                        next_point = [curr_point[0] - gs, curr_point[1]]
-                        if (next_point not in obstacles) and (next_point not in close_points):
+                        next_point = [curr_point[0] - 1, curr_point[1]]
+                        if (next_point not in self.obstacles) and (next_point not in close_points):
                             open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
                     elif i == 2:
-                        next_point = [curr_point[0], curr_point[1] + gs]
-                        if (next_point not in obstacles) and (next_point not in close_points):
+                        next_point = [curr_point[0], curr_point[1] + 1]
+                        if (next_point not in self.obstacles) and (next_point not in close_points):
                             open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
                     elif i == 3:
-                        next_point = [curr_point[0], curr_point[1] - gs]
-                        if (next_point not in obstacles) and (next_point not in close_points):
+                        next_point = [curr_point[0], curr_point[1] - 1]
+                        if (next_point not in self.obstacles) and (next_point not in close_points):
                             open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
                     if next_point == self.end_point:
                         print 'FOUND END'
@@ -182,7 +183,7 @@ class Turtlebot():
                 optimal_path.reverse()
                 optimal_path.pop(0)
             print 'Path found: ', optimal_path
-            return optimal_path
+            return (np.array(optimal_path)*gs)
 
     def cost(self, point1, past_cost):
             heur_cost = abs(self.end_point[0] - point1[0]) + abs(self.end_point[1] - point1[1])
@@ -194,7 +195,10 @@ class Turtlebot():
         # plot trajectory
         data = np.array(self.trajectory)
         #np.savetxt('trajectory.csv', data, fmt='%f', delimiter=',')
-        #plt.plot(data[:,0],data[:,1])
+        print data
+        plt.plot(data[:,0],data[:,1])
+        obstacles = 0.5*np.array(self.obstacles)
+        plt.plot(obstacles[:,0], obstacles[:,1])
         plt.show()
 
 
