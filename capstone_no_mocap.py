@@ -47,9 +47,9 @@ class Turtlebot():
 
     def run(self):
         # get waypoints from A star algorithm
-        T_ow = np.array([[cos(self.pose_mocap.theta), sin(self.pose_mocap.theta), 0, -(self.pose_mocap.x*cos(self.pose_mocap.theta) + self.pose_mocap.y*sin(self.pose_mocap.theta))],\
+        T_ow = np.array[[cos(self.pose_mocap.theta), sin(self.pose_mocap.theta), 0, -(self.pose_mocap.x*cos(self.pose_mocap.theta) + self.pose_mocap.y*sin(self.pose_mocap.theta))],\
                         [-(sin(self.pose_mocap.theta)), cos(self.pose_mocap.theta), 0, -(-self.pose_mocap.x*sin(self.pose_mocap.theta) + self.pose_mocap.y*cos(self.pose_mocap.theta))],\
-                        [0, 0, 1, 0], [0, 0, 0, 1]])
+                        [0, 0, 1, 0], [0, 0, 0, 1]]
         world_path = self.get_path_from_A_star()
         waypoints = []
         for i in range(len(world_path)):
