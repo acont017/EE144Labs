@@ -21,7 +21,7 @@ class Turtlebot():
         self.trajectory = list()
         self.rate = rospy.Rate(10)
         self.reset_odom = rospy.Publisher('/mobile_base/commands/reset_odometry', Empty, queue_size=10)
-        self.mocap_sub = rospy.Subscriber("mocap_node/robot01/pose2d", Pose2D, self.mocap_callback)
+        self.mocap_sub = rospy.Subscriber("mocap_node/robot11/pose2d", Pose2D, self.mocap_callback)
         for i in range (10):				#Need a loop which resets odom values, process takes time.
             self.reset_odom.publish(Empty())
             self.rate.sleep()
@@ -47,15 +47,12 @@ class Turtlebot():
 
     def run(self):
         # get waypoints from A star algorithm
-        T_ow = np.array([[cos(self.pose_mocap.theta), sin(self.pose_mocap.theta), 0, -(self.pose_mocap.x*cos(self.pose_mocap.theta) + self.pose_mocap.y*sin(self.pose_mocap.theta))],\
-                        [-(sin(self.pose_mocap.theta)), cos(self.pose_mocap.theta), 0, -(-self.pose_mocap.x*sin(self.pose_mocap.theta) + self.pose_mocap.y*cos(self.pose_mocap.theta))],\
-                        [0, 0, 1, 0], [0, 0, 0, 1]])
-        world_path = self.get_path_from_A_star()
-        waypoints = []
-        for i in range(len(world_path)):
-            waypoints[i] = np.append(world_path[i], [0,1])
-            waypoints[i] = np.dot(T_ow, waypoints[i])
-            waypoints = waypoints[:-2]
+        #T_ow = np.array([[cos(self.pose_mocap.theta), sin(self.pose_mocap.theta), 0, -(self.pose_mocap.x*cos(self.pose_mocap.theta) + self.pose_mocap.y*sin(self.pose_mocap.theta))],\
+        #                [-(sin(self.pose_mocap.theta)), cos(self.pose_mocap.theta), 0, -(-self.pose_mocap.x*sin(self.pose_mocap.theta) + self.pose_mocap.y*cos(self.pose_mocap.theta))],\
+        #                [0, 0, 1, 0], [0, 0, 0, 1]])
+        print 'Transformation matrix created'
+        waypoints = self.get_path_from_A_star()
+
         for i in range(len(waypoints)):
             # Until final point we pass current desired point and next desired point.
             if i < (len(waypoints) - 1):
@@ -65,7 +62,7 @@ class Turtlebot():
             # traveling.
             else:
                 self.lastpoint = 1
-                self.move_to_point(waypoints[i], [-1*self.pose.x, -1*self.pose.y])
+                self.move_to_point(waypoints[i], [-1*self.pose_mocap.x, -1*self.pose_mocap.y])
         self.stop()
         rospy.loginfo("Action done.")
         self.visualization()
@@ -77,7 +74,7 @@ class Turtlebot():
              [0,0,0,0,1,0], [5*self.T**4,4*self.T**3,3*self.T**2,2*self.T, 1, 0],[0,0,0,2,0,0],\
              [20*self.T**3,12*self.T**2,6*self.T,2,0,0]])
             # Vector pointed from current pos to desired point calculation.
-            c_2_p = [point[0] - self.pose.x, point[1] - self.pose.y]
+            c_2_p = [point[0] - self.pose_mocap.x, point[1] - self.pose_mocap.y]
             # Vector pointed from desired point to next desired point calculation.
             p_2_np = [next_point[0] - point[0], next_point[1] - point[1]]
             # Angle that described c_2_p.
@@ -88,14 +85,14 @@ class Turtlebot():
             # Elements are as follows: (x(0), x(T), dx/dt(0), dx/dt(T), dx^2/d^2t(0), dx^2/d^2t(T)).
             # Initial condtion velocity is set to current velocity to ensure smooth trajectory
             # rather than stopping and turning at each point.
-            x = np.array([self.pose.x, point[0], self.vel.linear.x*cos(angle),\
+            x = np.array([self.pose_mocap.x, point[0], self.vel.linear.x*cos(angle),\
                 .2*cos(angle_next), 0, 0])
             # y vector is set in the same fashion as the x vector.
-            y = np.array([self.pose.y, point[1], self.vel.linear.x*sin(angle),\
+            y = np.array([self.pose_mocap.y, point[1], self.vel.linear.x*sin(angle),\
                 .2*sin(angle_next), 0, 0])
             if self.lastpoint:
-                x = np.array([self.pose.x, point[0], self.vel.linear.x*cos(angle), 0, 0, 0])
-                y = np.array([self.pose.y, point[1], self.vel.linear.x*sin(angle), 0, 0, 0])
+                x = np.array([self.pose_mocap.x, point[0], self.vel.linear.x*cos(angle), 0, 0, 0])
+                y = np.array([self.pose)_mocap.y, point[1], self.vel.linear.x*sin(angle), 0, 0, 0])
             # The coefficients of the 5th order polynomials are solved here.
             ax = np.linalg.solve(M,x)
             ay = np.linalg.solve(M,y)
@@ -121,7 +118,7 @@ class Turtlebot():
                 theta = atan2(polyder_y(t), polyder_x(t))
                 # Error for P control.
                 t_error_old = t_error
-                t_error = (theta - self.pose.theta)
+                t_error = (theta - self.pose_mocap.theta)
                 # If statements to handle -pi,pi case.
                 if t_error > pi:
                     t_error = t_error - 2*pi
@@ -132,7 +129,7 @@ class Turtlebot():
                 self.rate.sleep()
 
     def get_path_from_A_star(self):
-            start_point = [self.pose_mocap.x, self.pose_mocap.y]
+            start_point = [round(self.pose_mocap.x), round(self.pose_mocap.y)]
             if (self.pose_mocap.y > 0):
                 self.end_point = [2.5, 3.5]
                 self.obstacles = [[0,0], [1, 0], [2, 0], [3, 0], [4,0], [5,0],\
@@ -172,19 +169,19 @@ class Turtlebot():
                 next_point = []
                 for i in range(d):
                     if i == 0:
-                        next_point = [curr_point[0] + 1, curr_point[1]]
+                        next_point = [curr_point[0] + 0.5, curr_point[1]]
                         if (next_point not in self.obstacles) and (next_point not in close_points):
                             open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
                     elif i == 1:
-                        next_point = [curr_point[0] - 1, curr_point[1]]
+                        next_point = [curr_point[0] - 0.5, curr_point[1]]
                         if (next_point not in self.obstacles) and (next_point not in close_points):
                             open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
                     elif i == 2:
-                        next_point = [curr_point[0], curr_point[1] + 1]
+                        next_point = [curr_point[0], curr_point[1] + 0.5]
                         if (next_point not in self.obstacles) and (next_point not in close_points):
                             open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
                     elif i == 3:
-                        next_point = [curr_point[0], curr_point[1] - 1]
+                        next_point = [curr_point[0], curr_point[1] - 0.5]
                         if (next_point not in self.obstacles) and (next_point not in close_points):
                             open_list.append([next_point, self.cost(curr_node[0], curr_node[1]), curr_node])
                     if next_point == self.end_point:
